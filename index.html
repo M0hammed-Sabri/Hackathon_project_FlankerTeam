@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing UI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007BFF; color: white; border: none; border-radius: 5px; }
+        #results { margin-top: 20px; padding: 15px; background: white; border: 1px solid #ddd; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h2>Prediction Dashboard</h2>
+    
+    <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom: 20px; display: block;">
+    <button onclick="runPrediction()">Predict</button>
+    
+    <div id="results">Predictions will appear here...</div>
+
+    <script>
+        async function runPrediction() {
+            const fileInput = document.getElementById('csvFileInput');
+            const resultsDiv = document.getElementById('results');
+            
+            if (fileInput.files.length === 0) {
+                resultsDiv.innerHTML = "<span style='color:red;'>Please select a CSV file first.</span>";
+                return;
+            }
+
+            resultsDiv.innerHTML = "Processing real data and calculating...";
+            
+            // Package the file to send to the backend
+            const formData = new FormData();
+            formData.append('csv_file', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultsDiv.innerHTML = `<span style='color:red;'>Error: ${data.error}</span>`;
+                    return;
+                }
+                
+                // turns the array into a readable HTML list
+                let outputHtml = "<h3>Predicted Kilowatts (Next 120 Mins):</h3><ol>";
+                data.predictions.forEach(val => {
+                    outputHtml += `<li> ${val.toFixed(2)} kW</li>`;
+                });
+                outputHtml += "</ol>";
+                
+                resultsDiv.innerHTML = outputHtml;
+            } catch (error) {
+                resultsDiv.innerHTML = "Error communicating with server.";
+            }
+        }
+    </script>
+</body>
+</html>
